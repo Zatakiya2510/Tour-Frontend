@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from '../context/AuthContext'; // Import your AuthContext
+import { Table } from "reactstrap";
 
 export default function Booking() {
   const [booking, setBooking] = useState([]);
@@ -10,39 +11,43 @@ export default function Booking() {
       const userId = user._id; // Get user ID from the user object
       fetch(`https://tour-backend-i1a8.onrender.com/api/v1/booking/user/${userId}`)
         .then((res) => res.json())
-        .then((res) => {
-          console.warn(res.data);
-          setBooking(res.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching bookings:", error);
-        });
+        .then((res) => setBooking(res.data))
+        .catch((error) => console.error("Error fetching bookings:", error));
     }
   }, [user]); // Fetch bookings when the user object changes
 
-  // Check if booking is empty or undefined before rendering
   if (!booking || booking.length === 0) {
-    return <div>No bookings available</div>;
+    return <div className="text-center">No bookings available</div>;
   }
 
-  const bookingShow = booking.map((boo) => {
-    return (
-      <div key={boo._id} className="card text-center mt-5">
-        <div className="card-header fw-bold">
-          {boo.fullName}
-        </div>
-        <div className="card-body">
-          <h5 className="card-title">Tour: {boo.tourName}</h5>
-          <h3 className="card-text">Guest: {boo.guestSize}</h3>
-          <h3 className="card-text">Phone: {boo.phone}</h3>
-        </div>
-      </div>
-    )
-  });
-
   return (
-    <div>
-      {bookingShow}
+    <div className="container mt-4">
+      <h2 className="text-center mb-4" style={{ color: "var(--heading-color)", fontFamily: "var(--subtitle-font-name)" }}>
+        My Bookings
+      </h2>
+
+      <Table bordered hover responsive className="booking-table">
+        <thead>
+          <tr style={{ backgroundColor: "var(--primary-color)", color: "#fff" }}>
+            <th>#</th>
+            <th>Full Name</th>
+            <th>Tour Name</th>
+            <th>Guest Size</th>
+            <th>Phone</th>
+          </tr>
+        </thead>
+        <tbody>
+          {booking.map((boo, index) => (
+            <tr key={boo._id}>
+              <td>{index + 1}</td>
+              <td>{boo.fullName}</td>
+              <td>{boo.tourName}</td>
+              <td>{boo.guestSize}</td>
+              <td>{boo.phone}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
     </div>
-  )
+  );
 }
