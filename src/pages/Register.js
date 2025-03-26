@@ -26,20 +26,19 @@ const Register = () => {
   };
 
   // ✅ **Step 1: Send OTP**
-  const sendOTP = async () => {
-    if (!credentials.email.includes("@")) {
-      Swal.fire("Error", "Please enter a valid email", "error");
-      return;
-    }
-
+   const sendOTP = async () => {
+    console.log("Sending OTP to:", `${BASE_URL}/auth/send-otp`);
+  
     try {
       const res = await fetch(`${BASE_URL}/auth/send-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: credentials.email }),
       });
-
+  
       const result = await res.json();
+      console.log("API Response:", result);  // 🔍 Debugging log
+  
       if (res.ok) {
         Swal.fire("Success", "OTP sent to your email", "success");
         setStep(2); // Move to OTP verification step
@@ -47,10 +46,10 @@ const Register = () => {
         Swal.fire("Error", result.message, "error");
       }
     } catch (err) {
+      console.error("Error:", err);  // 🔍 Debugging log
       Swal.fire("Error", "Failed to send OTP. Try again.", "error");
     }
   };
-
   // ✅ **Step 2: Verify OTP**
   const verifyOTP = async () => {
     if (!credentials.otp) {
