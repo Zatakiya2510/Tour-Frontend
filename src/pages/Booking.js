@@ -9,7 +9,7 @@ export default function Booking() {
   useEffect(() => {
     if (user) {
       const userId = user._id; // Get user ID from the user object
-      fetch(`https://tour-backend-i1a8.onrender.com/api/v1/booking/user/${userId}`)
+      fetch(`http://localhost:4000/api/v1//booking/user/${userId}`)
         .then((res) => res.json())
         .then((res) => setBooking(res.data))
         .catch((error) => console.error("Error fetching bookings:", error));

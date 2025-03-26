@@ -6,116 +6,167 @@ import registerImg from "../assets/images/register.png";
 import userIcon from "../assets/images/user.png";
 import { AuthContext } from "./../context/AuthContext.js";
 import { BASE_URL } from "./../utils/config.js";
-import Swal from 'sweetalert2';
+import Swal from "sweetalert2";
 
 const Register = () => {
   const [credentials, setCredentials] = useState({
-    username: "",
     email: "",
+    otp: "",
+    username: "",
     password: "",
     role: "user",
   });
-
+  
+  const [step, setStep] = useState(1); // Step 1: Email -> Step 2: OTP -> Step 3: Username & Password
   const { dispatch } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    const { id, value } = e.target;
-
-    if (id == "username") {
-      // Validate username (no spaces)
-      if (/\s/.test(value)) return; // if username contains space, do not update state
-    }
-
-    if (id == "email") {
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailPattern.test(value)) return; // if email is invalid, do not update state
-    }
-
-    if (id == "password") {
-      // Validate password (8-12 characters, capital, special character)
-      // You can implement your own validation logic here
-      if (value.length < 8 || value.length > 12) return; // if password length is invalid, do not update state
-    }
-
-    setCredentials((prev) => ({ ...prev, [id]: value }));
+    setCredentials((prev) => ({ ...prev, [e.target.id]: e.target.value }));
   };
 
+  // ✅ **Step 1: Send OTP**
+  const sendOTP = async () => {
+    if (!credentials.email.includes("@")) {
+      Swal.fire("Error", "Please enter a valid email", "error");
+      return;
+    }
 
+    try {
+      const res = await fetch(`${BASE_URL}/auth/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: credentials.email }),
+      });
 
-  const handleClick = async (e) => {
+      const result = await res.json();
+      if (res.ok) {
+        Swal.fire("Success", "OTP sent to your email", "success");
+        setStep(2); // Move to OTP verification step
+      } else {
+        Swal.fire("Error", result.message, "error");
+      }
+    } catch (err) {
+      Swal.fire("Error", "Failed to send OTP. Try again.", "error");
+    }
+  };
+
+  // ✅ **Step 2: Verify OTP**
+  const verifyOTP = async () => {
+    if (!credentials.otp) {
+      Swal.fire("Error", "Please enter the OTP", "error");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${BASE_URL}/auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: credentials.email, otp: credentials.otp }),
+      });
+
+      const result = await res.json();
+      if (res.ok) {
+        Swal.fire("Success", "OTP Verified. Proceed to registration.", "success");
+        setStep(3); // Move to Username & Password step
+      } else {
+        Swal.fire("Error", result.message, "error");
+      }
+    } catch (err) {
+      Swal.fire("Error", "OTP verification failed. Try again.", "error");
+    }
+  };
+
+  // ✅ **Step 3: Register User**
+  const handleRegister = async (e) => {
     e.preventDefault();
-
-    // Validate credentials before making API call
-    if (credentials.username.trim() == "" || credentials.email.trim() == "" || credentials.password.trim() == "") {
-      alert("Please fill in all fields.");
+    if (!credentials.username || !credentials.password) {
+      Swal.fire("Error", "All fields are required", "error");
       return;
     }
 
     try {
       const res = await fetch(`${BASE_URL}/auth/register`, {
-        method: "post",
-        headers: {
-          "content-type": "application/json",
-        },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
-      const result = await res.json();
 
+      const result = await res.json();
       if (res.ok) {
         dispatch({ type: "REGISTER_SUCCESS" });
-        // Show success message using SweetAlert
-        Swal.fire({
-          icon: 'success',
-          title: 'Registration Successful',
-          text: 'Your account has been created successfully!',
-        }).then(() => {
+        Swal.fire("Success", "Your account has been created!", "success").then(() => {
           navigate("/login");
         });
       } else {
-        // Handle error response
-        alert(result.message); // Display error message to the user
+        Swal.fire("Error", result.message, "error");
       }
     } catch (err) {
-      // Handle network or other errors
-      alert("Failed to create account. Please try again later.");
+      Swal.fire("Error", "Registration failed. Try again.", "error");
     }
   };
 
-
   return (
-    <>
-      <section>
-        <Container>
-          <Row>
-            <Col lg="8" className="m-auto">
-              <div className="register__contain d-flex justify-content-between">
-                <div className="register__img">
-                  <img src={registerImg} alt="register" />
+    <section>
+      <Container>
+        <Row>
+          <Col lg="8" className="m-auto">
+            <div className="register__contain d-flex justify-content-between">
+              <div className="register__img">
+                <img src={registerImg} alt="register" />
+              </div>
+
+              <div className="register__form">
+                <div className="user">
+                  <img src={userIcon} alt="user" />
                 </div>
+                <h2>Register</h2>
 
-                <div className="register__form">
-                  <div className="user">
-                    <img src={userIcon} alt="user" />
-                  </div>
-                  <h2>Register</h2>
-
-                  <Form onSubmit={handleClick}>
-                    <FormGroup>
-                      <input
-                        type="text"
-                        placeholder="Enter UserName"
-                        required
-                        id="username"
-                        onChange={handleChange}
-                      />
-                    </FormGroup>
+                {step === 1 && (
+                  <>
                     <FormGroup>
                       <input
                         type="email"
-                        placeholder="Enter E-mail"
-                        required
+                        placeholder="Enter Email"
                         id="email"
+                        required
+                        value={credentials.email}
+                        onChange={handleChange}
+                      />
+                    </FormGroup>
+                    <Button className="btn secondary__btn auth__btn" onClick={sendOTP}>
+                      Send OTP
+                    </Button>
+                  </>
+                )}
+
+                {step === 2 && (
+                  <>
+                    <FormGroup>
+                      <input
+                        type="text"
+                        placeholder="Enter OTP"
+                        id="otp"
+                        required
+                        value={credentials.otp}
+                        onChange={handleChange}
+                      />
+                    </FormGroup>
+                    <Button className="btn secondary__btn auth__btn" onClick={verifyOTP}>
+                      Verify OTP
+                    </Button>
+                  </>
+                )}
+
+                {step === 3 && (
+                  <Form onSubmit={handleRegister}>
+                    <FormGroup>
+                      <input
+                        type="text"
+                        placeholder="Enter Username"
+                        id="username"
+                        required
+                        value={credentials.username}
                         onChange={handleChange}
                       />
                     </FormGroup>
@@ -123,8 +174,9 @@ const Register = () => {
                       <input
                         type="password"
                         placeholder="Enter Password"
-                        required
                         id="password"
+                        required
+                        value={credentials.password}
                         onChange={handleChange}
                       />
                     </FormGroup>
@@ -132,16 +184,17 @@ const Register = () => {
                       Create Account
                     </Button>
                   </Form>
-                  <p>
-                    Already have an Account? <Link to="/login">Login</Link>
-                  </p>
-                </div>
+                )}
+
+                <p>
+                  Already have an Account? <Link to="/login">Login</Link>
+                </p>
               </div>
-            </Col>
-          </Row>
-        </Container>
-      </section>
-    </>
+            </div>
+          </Col>
+        </Row>
+      </Container>
+    </section>
   );
 };
 
